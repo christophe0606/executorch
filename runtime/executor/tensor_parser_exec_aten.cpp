@@ -8,6 +8,8 @@
 
 #include <executorch/runtime/executor/tensor_parser.h>
 
+#include <cinttypes>
+
 #include <executorch/runtime/core/evalue.h>
 #include <executorch/runtime/core/exec_aten/exec_aten.h>
 #include <executorch/runtime/executor/memory_manager.h>
@@ -108,14 +110,15 @@ ET_NODISCARD Error validateTensorLayout(
   ET_CHECK_OR_RETURN_ERROR(
       s_tensor->dim_order()->size() == static_cast<size_t>(dim),
       InvalidExternalData,
-      "Dim order size mismatch. Expected %d, got %u.",
+      "Dim order size mismatch. Expected %d, got %" PRIu32 ".",
       dim,
       s_tensor->dim_order()->size());
   for (int i = 0; i < dim; i++) {
     ET_CHECK_OR_RETURN_ERROR(
         s_tensor->sizes()->Get(i) == expected_layout.sizes()[i],
         InvalidExternalData,
-        "Sizes mismatch. Expected %d, got %d for size at index %d.",
+        "Sizes mismatch. Expected %" PRId32 ", got %" PRId32
+        " for size at index %d.",
         s_tensor->sizes()->Get(i),
         expected_layout.sizes()[i],
         i);
