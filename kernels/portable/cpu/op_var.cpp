@@ -30,7 +30,7 @@ void compute_variance(
   CTYPE_OUT* out_data = out.mutable_data_ptr<CTYPE_OUT>();
   if (num == 0 || denominator <= 0) {
     for (const auto out_ix : c10::irange(out.numel())) {
-      out_data[out_ix] = NAN;
+      out_data[out_ix] = static_cast<CTYPE_OUT>(NAN);
     }
   } else if (in.numel() > 0) {
     MapReduceOverDimListPlan plan(in, dim_list);
@@ -50,7 +50,8 @@ void compute_variance(
                 },
                 [](CTYPE_OUT outv, CTYPE_OUT acc) { return acc + outv; },
                 out_ix);
-            out_data[out_ix] = sum2 / denominator;
+            out_data[out_ix] =
+                static_cast<CTYPE_OUT>(static_cast<double>(sum2) / denominator);
           }
         });
     ET_KERNEL_CHECK_MSG(ctx, success, Internal, , "parallel_for failed");

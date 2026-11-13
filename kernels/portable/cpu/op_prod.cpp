@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 #include <c10/util/irange.h>
+#include <type_traits>
 
 #include <executorch/kernels/portable/cpu/util/reduce_util.h>
 #include <executorch/runtime/kernel/kernel_includes.h>
@@ -34,13 +35,22 @@ Tensor& prod_out(
   ScalarType out_type = out.scalar_type();
   static constexpr auto name = "prod.int_out";
 
+  const auto accumulate = [](auto& product, auto value) {
+    using OutputType = std::decay_t<decltype(product)>;
+    if constexpr (std::is_same_v<OutputType, bool>) {
+      product = product && static_cast<bool>(value);
+    } else {
+      product *= static_cast<OutputType>(value);
+    }
+  };
+
   ET_SWITCH_REALHBBF16_TYPES(in_type, ctx, name, CTYPE_IN, [&] {
     ET_SWITCH_REALHBBF16_TYPES(out_type, ctx, name, CTYPE_OUT, [&] {
       const auto data_in = in.const_data_ptr<CTYPE_IN>();
       auto data_out = out.mutable_data_ptr<CTYPE_OUT>();
       data_out[0] = static_cast<CTYPE_OUT>(1);
       for (const auto i : c10::irange(in.numel())) {
-        data_out[0] *= static_cast<CTYPE_OUT>(data_in[i]);
+        accumulate(data_out[0], data_in[i]);
       }
     });
   });

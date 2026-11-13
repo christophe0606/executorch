@@ -182,7 +182,7 @@ std::tuple<Tensor&, Tensor&, Tensor&> _native_batch_norm_legit_no_training_out(
       for (size_t c = 0; c < C; ++c) {
         CTYPE mean = mean_data[c];
         CTYPE var = var_data[c];
-        CTYPE invstd = 1.0 / std::sqrt(var + eps);
+        CTYPE invstd = 1.0 / std::sqrt(static_cast<double>(var) + eps);
         CTYPE weight_val = 1;
         if (weight.has_value()) {
           weight_val = weight.value().const_data_ptr<CTYPE>()[c];

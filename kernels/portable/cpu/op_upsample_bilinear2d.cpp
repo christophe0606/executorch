@@ -22,6 +22,7 @@ void upsample_bilinear2d_kernel_impl_nchw(
     const float scale_h,
     const float scale_w,
     Tensor& out) {
+  using ComputeType = decltype(CTYPE{} * float{});
   const auto in_data = in.const_data_ptr<CTYPE>();
   auto out_data = out.mutable_data_ptr<CTYPE>();
 
@@ -68,10 +69,12 @@ void upsample_bilinear2d_kernel_impl_nchw(
           const auto bottom_right =
               in_plane[in_h2 * in.strides()[2] + in_w2 * in.strides()[3]];
 
-          const auto top = top_left * weight_w + top_right * inv_weight_w;
-          const auto bottom =
-              bottom_left * weight_w + bottom_right * inv_weight_w;
-          const auto val = top * weight_h + bottom * inv_weight_h;
+          const auto top = top_left * static_cast<ComputeType>(weight_w) +
+              top_right * static_cast<ComputeType>(inv_weight_w);
+          const auto bottom = bottom_left * static_cast<ComputeType>(weight_w) +
+              bottom_right * static_cast<ComputeType>(inv_weight_w);
+          const auto val = top * static_cast<ComputeType>(weight_h) +
+              bottom * static_cast<ComputeType>(inv_weight_h);
 
           *out_data = val;
           out_data++;
@@ -90,6 +93,7 @@ void upsample_bilinear2d_kernel_impl_nhwc(
     const float scale_h,
     const float scale_w,
     Tensor& out) {
+  using ComputeType = decltype(CTYPE{} * float{});
   auto in_data = in.const_data_ptr<CTYPE>();
   auto out_data = out.mutable_data_ptr<CTYPE>();
 
@@ -139,10 +143,12 @@ void upsample_bilinear2d_kernel_impl_nhwc(
               [in_h2 * in.strides()[2] + in_w2 * in.strides()[3] +
                c * in.strides()[1]];
 
-          const auto top = top_left * weight_w + top_right * inv_weight_w;
-          const auto bottom =
-              bottom_left * weight_w + bottom_right * inv_weight_w;
-          const auto val = top * weight_h + bottom * inv_weight_h;
+          const auto top = top_left * static_cast<ComputeType>(weight_w) +
+              top_right * static_cast<ComputeType>(inv_weight_w);
+          const auto bottom = bottom_left * static_cast<ComputeType>(weight_w) +
+              bottom_right * static_cast<ComputeType>(inv_weight_w);
+          const auto val = top * static_cast<ComputeType>(weight_h) +
+              bottom * static_cast<ComputeType>(inv_weight_h);
 
           *out_data = val;
           out_data++;

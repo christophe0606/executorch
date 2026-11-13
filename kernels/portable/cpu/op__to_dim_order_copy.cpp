@@ -79,7 +79,9 @@ Tensor& _to_dim_order_copy_out(
                  /*support_noncontiguous_input_tensors=*/true>(
                  /*dummy output*/ self, self, out)) {
           (void)unused_index;
-          out_data[out_data_index].real_ = self_data[self_data_index];
+          out_data[out_data_index].real_ =
+              static_cast<decltype(CTYPE_OUT{}.real_)>(
+                  self_data[self_data_index]);
           out_data[out_data_index].imag_ = 0;
         }
       });

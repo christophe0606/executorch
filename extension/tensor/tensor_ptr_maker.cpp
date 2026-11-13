@@ -26,9 +26,16 @@ bool extract_scalar(executorch::aten::Scalar scalar, INT_T* out_val) {
     return false;
   }
   int64_t val = scalar.to<int64_t>();
-  if (val < std::numeric_limits<INT_T>::lowest() ||
-      val > std::numeric_limits<INT_T>::max()) {
-    return false;
+  if constexpr (std::is_signed_v<INT_T>) {
+    if (val < static_cast<int64_t>(std::numeric_limits<INT_T>::lowest()) ||
+        val > static_cast<int64_t>(std::numeric_limits<INT_T>::max())) {
+      return false;
+    }
+  } else {
+    if (val < 0 ||
+        static_cast<uint64_t>(val) > std::numeric_limits<INT_T>::max()) {
+      return false;
+    }
   }
   *out_val = static_cast<INT_T>(val);
   return true;
@@ -46,8 +53,8 @@ bool extract_scalar(executorch::aten::Scalar scalar, FLOAT_T* out_val) {
   if (scalar.isFloatingPoint()) {
     val = scalar.to<double>();
     if (std::isfinite(val) &&
-        (val < std::numeric_limits<FLOAT_T>::lowest() ||
-         val > std::numeric_limits<FLOAT_T>::max())) {
+        (val < static_cast<double>(std::numeric_limits<FLOAT_T>::lowest()) ||
+         val > static_cast<double>(std::numeric_limits<FLOAT_T>::max()))) {
       return false;
     }
   } else if (scalar.isIntegral(/*includeBool=*/false)) {

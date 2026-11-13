@@ -218,6 +218,9 @@ inline void vec_quantized_matmul_transb_int8(
     int64_t n,
     int64_t p,
     int64_t g) {
+  using AccumulatorType = decltype(T{} + U{} * U{});
+  using ScaleType = decltype(T{} * V{});
+  using ScaledAccumulatorType = decltype(T{} + ScaleType{});
   int64_t n_over_g = (n + g - 1) / g;
 
   for (const auto i : c10::irange(m)) {
@@ -227,9 +230,24 @@ inline void vec_quantized_matmul_transb_int8(
         T psum = 0;
         // the last group may have fewer than g elements
         for (const auto k2 : c10::irange(k, bounds_min(k + g, n))) {
-          psum += x[i * n + k2] * static_cast<U>(y[j * n + k2]);
+          if constexpr (std::is_floating_point_v<T>) {
+            psum = static_cast<T>(
+                static_cast<AccumulatorType>(psum) +
+                static_cast<AccumulatorType>(
+                    x[i * n + k2] * static_cast<U>(y[j * n + k2])));
+          } else {
+            psum += x[i * n + k2] * static_cast<U>(y[j * n + k2]);
+          }
         }
-        sum += psum * s[j * n_over_g + k / g];
+        if constexpr (std::is_floating_point_v<T>) {
+          sum = static_cast<T>(
+              static_cast<ScaledAccumulatorType>(sum) +
+              static_cast<ScaledAccumulatorType>(
+                  static_cast<ScaleType>(psum) *
+                  static_cast<ScaleType>(s[j * n_over_g + k / g])));
+        } else {
+          sum += psum * s[j * n_over_g + k / g];
+        }
       }
       z[i * p + j] = sum;
     }
@@ -271,9 +289,12 @@ inline float reduce_add(const T* x, size_t size) {
 /// `size` elements.
 template <typename T>
 inline float vec_powerf(const T* x, size_t size) {
+  using ComputeType = decltype(float{} * T{});
   float sum = 0;
   for (const auto i : c10::irange(size)) {
-    sum += static_cast<float>(x[i]) * x[i];
+    sum = static_cast<float>(
+        static_cast<ComputeType>(sum) +
+        static_cast<ComputeType>(static_cast<float>(x[i])) * x[i]);
   }
   return sum;
 }

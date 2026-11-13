@@ -16,7 +16,7 @@ namespace {
 
 template <typename T>
 T reciprocal(T x) {
-  return 1.0 / x;
+  return static_cast<T>(1.0 / static_cast<double>(x));
 }
 
 } // namespace

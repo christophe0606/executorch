@@ -91,7 +91,7 @@ struct Lp {
     return agg + up;
   }
   static inline CTYPE finish(const CTYPE& agg, const CTYPE& p) {
-    return std::pow(agg, 1.0 / p);
+    return std::pow(agg, 1.0 / static_cast<double>(p));
   }
 };
 

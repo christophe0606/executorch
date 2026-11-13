@@ -29,8 +29,9 @@ namespace {
 template <typename CTYPE_OUT, typename CTYPE_CAST>
 /** Check if val, when cast to CTYPE_CAST, is not in the range of CTYPE_OUT */
 bool is_out_of_bounds(CTYPE_CAST val_cast) {
-  return val_cast < std::numeric_limits<CTYPE_OUT>::lowest() ||
-      val_cast > std::numeric_limits<CTYPE_OUT>::max();
+  return val_cast <
+      static_cast<CTYPE_CAST>(std::numeric_limits<CTYPE_OUT>::lowest()) ||
+      val_cast > static_cast<CTYPE_CAST>(std::numeric_limits<CTYPE_OUT>::max());
 }
 
 ET_NODISCARD bool check_bounds(

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cinttypes>
 #include <cmath>
+#include <type_traits>
 #if defined(__aarch64__) || defined(__ARM_NEON)
 #include <arm_neon.h>
 #endif
@@ -243,7 +244,8 @@ void dequantize_per_channel_optimized(
           SizesType numel, SizesType outer_idx, SizesType unpacked_dim_idx) {
         const int8_t* in_data_local =
             in_data + outer_idx * outer_stride + unpacked_dim_idx * axis_stride;
-        const double scale = get_scale(scales, unpacked_dim_idx);
+        const double scale =
+            static_cast<double>(get_scale(scales, unpacked_dim_idx));
         const int64_t zero_point = zero_points != nullptr
             ? get_zero_point(*zero_points, unpacked_dim_idx)
             : 0;
@@ -299,7 +301,7 @@ Tensor& dequantize_per_tensor_out(
     auto* out_data_ptr = out.mutable_data_ptr<OUT_CTYPE>();                    \
     const auto* input_data_ptr = input.const_data_ptr<IN_CTYPE>();             \
     const auto input_numel = input.numel();                                    \
-    for (size_t i = 0; i < input_numel; i++) {                                 \
+    for (int64_t i = 0; i < input_numel; i++) {                                 \
       out_data_ptr[i] = static_cast<OUT_CTYPE>(                                \
           (input_data_ptr[i] - static_cast<int32_t>(zero_point)) *             \
           static_cast<float>(scale));                                          \
@@ -466,7 +468,10 @@ Tensor& dequantize_per_channel_out(
               size_t numel, size_t stride, size_t base_ix) {                   \
             for (size_t i = 0; i < numel; i++) {                               \
               size_t current_ix = base_ix * stride + i;                        \
-              float _scale = get_scale(scale, current_ix);                     \
+              using ScaleType = std::conditional_t<                          \
+                  std::is_same_v<CTYPE_OUT, double>, double, float>;          \
+              const auto _scale =                                           \
+                  static_cast<ScaleType>(get_scale(scale, current_ix));      \
               int64_t zero_point = 0;                                          \
               if (zero_point_tensor != nullptr) {                              \
                 zero_point = get_zero_point(*zero_point_tensor, current_ix);   \
@@ -482,7 +487,7 @@ Tensor& dequantize_per_channel_out(
           dim);                                                                \
       break;                                                                   \
     }                                                                          \
-    for (size_t channel_ix = 0; channel_ix < input.size(axis); ++channel_ix) { \
+    for (int64_t channel_ix = 0; channel_ix < input.size(axis); ++channel_ix) { \
       float _scale = get_scale(scale, channel_ix);                             \
       int64_t _zero_point = 0;                                                 \
       if (zero_point_tensor != nullptr) {                                      \
@@ -603,7 +608,7 @@ Tensor& dequantize_per_token_out(
     Tensor& out) {
   // Refactor this into a util
   size_t num_channels = 1;
-  for (size_t i = 0; i < input.dim() - 1; i++) {
+  for (int64_t i = 0; i < input.dim() - 1; i++) {
     num_channels *= input.size(i);
   }
   // This unfortunate change is needed because we compile op_quantize for aten

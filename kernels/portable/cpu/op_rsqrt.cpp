@@ -16,7 +16,7 @@ namespace {
 
 template <typename T>
 T rsqrt(T x) {
-  return 1.0 / std::sqrt(x);
+  return static_cast<T>(1.0 / static_cast<double>(std::sqrt(x)));
 }
 
 } // namespace
