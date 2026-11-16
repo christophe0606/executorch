@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 import traceback
 from pathlib import Path
@@ -41,6 +42,33 @@ import op_recipes  # type: ignore[import-not-found]  # noqa: E402
 from op_guards import (  # type: ignore[import-not-found]  # noqa: E402
     discover_components,
 )
+
+
+def _use_executorch_checkout(source_dir: Path) -> None:
+    """Use checkout Python sources even when Windows checked out symlinks as files."""
+    source_dir = source_dir.resolve()
+    if not (source_dir / "exir" / "__init__.py").is_file():
+        return
+
+    import executorch  # noqa: PLC0415
+
+    executorch.__path__ = [str(source_dir)]
+    # Source installs normally stage these resources beside the serializer.
+    for name in ("program.fbs", "scalar_type.fbs"):
+        schema = source_dir / "schema" / name
+        destination = source_dir / "exir" / "_serialize" / name
+        if not destination.is_file() or destination.read_bytes() != schema.read_bytes():
+            shutil.copyfile(schema, destination)
+
+    if not os.environ.get("FLATC_EXECUTABLE"):
+        for flatc in (
+            source_dir / "cmake-out-arm/third-party/flatc_ep/bin/flatc.exe",
+            source_dir / "cmake-out-flatc-host/flatc.exe",
+        ):
+            if flatc.is_file():
+                os.environ["FLATC_EXECUTABLE"] = str(flatc)
+                break
+    print(f"Using ExecuTorch Python sources: {source_dir}", flush=True)
 
 
 def _assert_executorch_from_source(source_dir: Path) -> None:
@@ -63,10 +91,8 @@ def _assert_executorch_from_source(source_dir: Path) -> None:
     if file:
         paths.append(str(Path(file).parent))
     source_dir = source_dir.resolve()
-    if any(
-        source_dir in Path(p).resolve().parents or Path(p).resolve() == source_dir
-        for p in paths
-    ):
+    package_roots = {source_dir, source_dir / "src" / "executorch"}
+    if any(Path(p).resolve() in package_roots for p in paths):
         return
     raise SystemExit(
         "executorch is imported from outside the source tree, so the exported "
@@ -514,6 +540,7 @@ def main() -> None:  # noqa: C901
     # function docstring); the resulting .pte would mismatch the pack's kernel
     # arity and fail on device. ALLOW_STALE_EXECUTORCH=1 bypasses for debugging.
     if os.environ.get("ALLOW_STALE_EXECUTORCH") != "1":
+        _use_executorch_checkout(source_dir)
         _assert_executorch_from_source(source_dir)
 
     components = discover_components(source_dir)
@@ -555,8 +582,7 @@ def main() -> None:  # noqa: C901
         op_name = out_dir / f"{cat_id}__{component.name}"
         op_pte = op_name.with_suffix(".pte")
         try:
-            if args.display_quantized_values or args.display_metadata:
-                print(f"=== exporting {component.category}/{component.name} ===")
+            print(f"=== exporting {component.category}/{component.name} ===", flush=True)
             model, inputs = recipe.make()
 
             pte = exporter(
@@ -579,6 +605,7 @@ def main() -> None:  # noqa: C901
                 )
 
             op_pte.write_bytes(bytes(pte.buffer))
+            print(f"    wrote {op_pte}", flush=True)
 
             entry = {
                 "op": component.name,
@@ -589,6 +616,9 @@ def main() -> None:  # noqa: C901
                 entry["delegated"] = _is_delegated(pte)
             manifest.append(entry)
         except Exception as exc:  # noqa: BLE001 - report, don't abort the sweep
+            print(
+                f"    FAILED: {type(exc).__name__}: {exc}", file=sys.stderr, flush=True
+            )
             failed.append(
                 (component.category, component.name, f"{type(exc).__name__}: {exc}")
             )
@@ -605,6 +635,7 @@ def main() -> None:  # noqa: C901
         op_name = out_dir / f"{cat_id}__{variant_name}"
         op_pte = op_name.with_suffix(".pte")
         try:
+            print(f"=== exporting {category}/{variant_name} ===", flush=True)
             model, inputs = recipe.make()
             pte = exporter(
                 model,
@@ -619,6 +650,7 @@ def main() -> None:  # noqa: C901
                 _assert_arity_matches_schema(pte, source_dir, category, base_name)
 
             op_pte.write_bytes(bytes(pte.buffer))
+            print(f"    wrote {op_pte}", flush=True)
 
             entry = {
                 "op": variant_name,
@@ -630,6 +662,9 @@ def main() -> None:  # noqa: C901
             manifest.append(entry)
             n_variants += 1
         except Exception as exc:  # noqa: BLE001 - report, don't abort the sweep
+            print(
+                f"    FAILED: {type(exc).__name__}: {exc}", file=sys.stderr, flush=True
+            )
             failed.append((category, variant_name, f"{type(exc).__name__}: {exc}"))
             if not args.continue_on_error:
                 traceback.print_exc()

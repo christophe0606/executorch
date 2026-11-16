@@ -49,6 +49,30 @@ def test_skips_have_reasons():
     assert all(reason for reason in op_recipes.SKIPS.values())
 
 
+@pytest.mark.parametrize(
+    "category,op,kernel",
+    [
+        ("Portable", "bucketize", "bucketize"),
+        ("Portable", "fft_r2c", "_fft_r2c"),
+        ("Cortex-M", "quantized_div", "quantized_div"),
+    ],
+)
+def test_new_recipes_export_the_named_kernel(category, op, kernel):
+    import generate_test_models as gen  # type: ignore[import-not-found]
+
+    recipe = op_recipes.RECIPES[(category, op)]
+    model, inputs = recipe.make()
+    exporter = gen._export_cortex_m if category == "Cortex-M" else gen._export_portable
+    program = exporter(model, inputs, recipe)
+    targets = [
+        str(node.target)
+        for node in program.exported_program("forward").graph_module.graph.nodes
+        if node.op == "call_function"
+    ]
+    assert any(f".{kernel}." in target for target in targets), targets
+    assert bytes(program.buffer)
+
+
 @pytest.mark.parametrize("op", ["add", "native_layer_norm", "cat", "max"])
 def test_representative_portable_exports(op):
     """The engine produces a non-empty, runnable, self-contained .pte for varied

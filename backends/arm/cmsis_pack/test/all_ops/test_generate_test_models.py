@@ -13,6 +13,7 @@ check. They do not export any model, so they run without a torch/vela env.
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -53,3 +54,12 @@ def test_executorch_provenance_guard_rejects_outside_tree(tmp_path):
         g._assert_executorch_from_source(tmp_path)
     assert "outside the source tree" in str(exc.value)
     assert "Reinstall executorch" in str(exc.value)
+
+
+def test_executorch_provenance_guard_rejects_venv_inside_tree(tmp_path, monkeypatch):
+    package = SimpleNamespace(
+        __path__=[str(tmp_path / ".venv/Lib/site-packages/executorch")]
+    )
+    monkeypatch.setitem(sys.modules, "executorch", package)
+    with pytest.raises(SystemExit, match="outside the source tree"):
+        g._assert_executorch_from_source(tmp_path)

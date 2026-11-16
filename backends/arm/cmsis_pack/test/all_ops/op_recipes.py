@@ -466,9 +466,26 @@ _portable(
 )
 
 
+# Expose real/imaginary pairs so the runner uses its floating-point tolerance.
+_portable(
+    "fft_r2c",
+    lambda: (
+        _Fn(lambda x: torch.view_as_real(torch.fft.rfft(x))),
+        (_ramp(-1, 1, (2, 8)),),
+    ),
+)
+
+
 # --------------------------------------------------------------------------
 # Indexing / gather / scatter
 # --------------------------------------------------------------------------
+_portable(
+    "bucketize",
+    lambda: (
+        _Fn(lambda x: torch.bucketize(x, torch.tensor([-1.0, 0.0, 1.0]))),
+        (_ramp(-2, 2, (2, 4)),),
+    ),
+)
 _portable(
     "index_select",
     lambda: (
@@ -604,6 +621,10 @@ _cm(
 _cm(
     "quantized_mul",
     lambda: (_Fn(lambda a, b: a * b), (_ramp(-2, 2, (1, 8)), _ramp(-1, 1, (1, 8)))),
+)
+_cm(
+    "quantized_div",
+    lambda: (_Fn(lambda a, b: a / b), (_ramp(-2, 2, (1, 8)), _ramp(1, 2, (1, 8)))),
 )
 _cm(
     "maximum",
