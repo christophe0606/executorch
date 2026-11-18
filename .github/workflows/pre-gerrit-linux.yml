@@ -1,0 +1,62 @@
+name: Pre-Gerrit Linux tests
+
+on:
+  push:
+    branches: [ci/compilation-warnings]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.suite }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [shared-cpp, cortex-m55, cortex-m7, cortex-m0plus, zephyr]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run shared C++ tests
+        if: matrix.suite == 'shared-cpp'
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm libjpeg-dev libpng-dev
+          ./install_executorch.sh --minimal
+          bash test/run_oss_cpp_tests.sh
+
+      - name: Run Cortex-M operator tests
+        if: startsWith(matrix.suite, 'cortex-m')
+        env:
+          CORTEX_TARGET: ${{ matrix.suite }}
+        run: |
+          ./install_executorch.sh
+          bash .ci/scripts/setup-arm-baremetal-tools.sh --fvp corstone300
+          source examples/arm/arm-scratch/setup_path.sh
+          bash backends/cortex_m/test/build_test_runner.sh --target="$CORTEX_TARGET"
+          python -m pytest -c backends/arm/test/pytest.ini \
+            backends/cortex_m/test/ops --cortex-m-target="$CORTEX_TARGET"
+
+      - name: Run Zephyr Cortex-M55 sample
+        if: matrix.suite == 'zephyr'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gperf device-tree-compiler gcc-multilib g++-multilib libsdl2-dev
+          python -m venv "$RUNNER_TEMP/zephyr-venv"
+          source "$RUNNER_TEMP/zephyr-venv/bin/activate"
+          bash .ci/scripts/test_zephyr.sh \
+            --targets cortex-m55 \
+            --zephyr-samples-readme-path zephyr/samples/hello-executorch/README.md
