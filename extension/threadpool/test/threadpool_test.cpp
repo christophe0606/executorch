@@ -10,6 +10,7 @@
 #include <executorch/extension/threadpool/threadpool.h>
 #include <executorch/runtime/platform/runtime.h>
 
+#include <algorithm>
 #include <atomic>
 #include <mutex>
 #include <numeric>
