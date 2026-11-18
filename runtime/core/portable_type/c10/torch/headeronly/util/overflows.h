@@ -84,7 +84,10 @@ std::enable_if_t<std::is_floating_point_v<From>, bool> overflows(
         static_cast<From>(uint64_t{1} << (digits - 1)) * From{2};
     return f < static_cast<From>(limit::lowest()) || f >= upper;
   }
-  return f < limit::lowest() || f > limit::max();
+  using CompareType = decltype(f + limit::lowest());
+  return static_cast<CompareType>(f) <
+      static_cast<CompareType>(limit::lowest()) ||
+      static_cast<CompareType>(f) > static_cast<CompareType>(limit::max());
 }
 
 C10_CLANG_DIAGNOSTIC_POP()

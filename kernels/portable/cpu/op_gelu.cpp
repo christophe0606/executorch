@@ -47,11 +47,14 @@ Tensor& gelu_out(
               return std::numeric_limits<CTYPE>::infinity();
             }
             const CTYPE kBeta = M_SQRT2 * M_2_SQRTPI * 0.5;
-            const CTYPE kKappa = static_cast<float>(0.044715);
+            const CTYPE kKappa =
+                static_cast<CTYPE>(static_cast<float>(0.044715));
 
             const CTYPE x_cubed = x * x * x;
             const CTYPE inner = kBeta * (x + kKappa * x_cubed);
-            const CTYPE ret = 0.5 * x * (1.0 + std::tanh(inner));
+            const CTYPE ret = static_cast<CTYPE>(
+                0.5 * static_cast<double>(x) *
+                (1.0 + static_cast<double>(std::tanh(inner))));
 
             return ret;
           },
@@ -66,7 +69,9 @@ Tensor& gelu_out(
             } else if (x == std::numeric_limits<CTYPE>::infinity()) {
               return std::numeric_limits<CTYPE>::infinity();
             }
-            return static_cast<CTYPE>(0.5 * x * (1 + std::erf(x * M_SQRT1_2)));
+            return static_cast<CTYPE>(
+                0.5 * static_cast<double>(x) *
+                (1 + std::erf(static_cast<double>(x) * M_SQRT1_2)));
           },
           in.const_data_ptr<CTYPE>(),
           out.mutable_data_ptr<CTYPE>(),

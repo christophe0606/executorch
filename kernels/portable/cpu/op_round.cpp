@@ -25,7 +25,10 @@ namespace {
 // the implementation from torch/src/jit/runtime/register_ops_utils.h.
 template <typename CTYPE>
 inline CTYPE round_to_even(CTYPE a) {
-  return a - std::floor(a) == 0.5 ? (std::round(a * 0.5) * 2.0) : std::round(a);
+  return static_cast<CTYPE>(
+      static_cast<double>(a - std::floor(a)) == 0.5
+          ? (std::round(static_cast<double>(a) * 0.5) * 2.0)
+          : static_cast<double>(std::round(a)));
 }
 
 } // namespace

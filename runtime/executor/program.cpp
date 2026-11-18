@@ -8,6 +8,7 @@
 
 #include <executorch/runtime/executor/program.h>
 
+#include <cinttypes>
 #include <cstddef>
 #include <cstdint>
 

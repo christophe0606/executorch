@@ -193,8 +193,8 @@ Tensor& quantize_per_tensor_out(
       int32x4_t out_CDEF =
           vsubq_s32(vreinterpretq_s32_f32(outf_CDEF), vmagic_int_less_zp);
 
-      int16x8_t out_04152637;
-      int16x8_t out_8C9DAEBF;
+      int16x8_t out_04152637{};
+      int16x8_t out_8C9DAEBF{};
       out_04152637 = vmovnbq_s32(out_04152637, out_0123);
       out_04152637 = vmovntq_s32(out_04152637, out_4567);
       out_8C9DAEBF = vmovnbq_s32(out_8C9DAEBF, out_89AB);
@@ -205,7 +205,7 @@ Tensor& quantize_per_tensor_out(
       int16x8_t out_8C9DAEBF_clamped =
           vminq_s16(vmaxq_s16(out_8C9DAEBF, vqmin), vqmax);
 
-      int8x16_t out_084C195D2A6E3B7F;
+      int8x16_t out_084C195D2A6E3B7F{};
       out_084C195D2A6E3B7F =
           vmovnbq_s16(out_084C195D2A6E3B7F, out_04152637_clamped);
       out_084C195D2A6E3B7F =

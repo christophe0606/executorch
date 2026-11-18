@@ -8,6 +8,7 @@
 
 #include <executorch/runtime/executor/program_validation.h>
 
+#include <cinttypes>
 #include <cstdint>
 
 #include <executorch/runtime/core/exec_aten/util/scalar_type_util.h>
@@ -40,8 +41,8 @@ validate_tensor(const executorch_flatbuffer::Tensor* tensor) {
     if (size < 0) {
       ET_LOG(
           Error,
-          "Size must be non-negative, got %d at dimension %u",
-          static_cast<int>(size),
+          "Size must be non-negative, got %" PRId32 " at dimension %u",
+          size,
           static_cast<unsigned>(i));
       return Error::InvalidProgram;
     }
@@ -196,10 +197,10 @@ validate_program(const executorch_flatbuffer::Program* program) {
                   values->size()) {
             ET_LOG(
                 Error,
-                "TensorList item %u has out-of-bounds index %d (values size "
-                "%u) in execution plan %u",
+                "TensorList item %u has out-of-bounds index %" PRId32
+                " (values size %u) in execution plan %u",
                 static_cast<unsigned>(item_idx),
-                static_cast<int>(evalue_index),
+                evalue_index,
                 static_cast<unsigned>(values->size()),
                 static_cast<unsigned>(plan_idx));
             return Error::InvalidProgram;
@@ -210,10 +211,10 @@ validate_program(const executorch_flatbuffer::Program* program) {
           if (referenced_value == nullptr) {
             ET_LOG(
                 Error,
-                "TensorList item %u references null evalue at index %d in "
-                "execution plan %u",
+                "TensorList item %u references null evalue at index %" PRId32
+                " in execution plan %u",
                 static_cast<unsigned>(item_idx),
-                static_cast<int>(evalue_index),
+                evalue_index,
                 static_cast<unsigned>(plan_idx));
             return Error::InvalidProgram;
           }
@@ -223,10 +224,10 @@ validate_program(const executorch_flatbuffer::Program* program) {
             ET_LOG(
                 Error,
                 "TensorList item %u references non-Tensor evalue (type %d) at "
-                "index %d in execution plan %u",
+                "index %" PRId32 " in execution plan %u",
                 static_cast<unsigned>(item_idx),
                 static_cast<int>(referenced_value->val_type()),
-                static_cast<int>(evalue_index),
+                evalue_index,
                 static_cast<unsigned>(plan_idx));
             return Error::InvalidProgram;
           }

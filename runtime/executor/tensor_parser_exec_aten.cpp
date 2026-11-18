@@ -8,6 +8,8 @@
 
 #include <executorch/runtime/executor/tensor_parser.h>
 
+#include <cinttypes>
+
 #include <executorch/runtime/core/device_allocator.h>
 #include <executorch/runtime/core/evalue.h>
 #include <executorch/runtime/core/exec_aten/exec_aten.h>

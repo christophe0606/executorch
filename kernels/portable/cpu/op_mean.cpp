@@ -118,8 +118,8 @@ Tensor& mean_dim_out(
                   ix /= out.size(d);
                 }
               }
-              out_data[out_offset] =
-                  static_cast<CTYPE_OUT>(sum / static_cast<float>(num));
+              out_data[out_offset] = static_cast<CTYPE_OUT>(
+                  sum / static_cast<ACC>(static_cast<float>(num)));
             }
           });
       ET_KERNEL_CHECK_MSG(ctx, success, Internal, , "parallel_for failed");
