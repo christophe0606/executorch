@@ -336,6 +336,8 @@ list(REMOVE_ITEM all_test_sources "op_to_copy_test.cpp"
 set(_portable_kernels_test_sources
     ${all_test_sources}
     ${CMAKE_CURRENT_BINARY_DIR}/include/portable/executorch/kernels/test/supported_features.cpp
+    "${EXECUTORCH_ROOT}/kernels/portable/cpu/test/vec_ops_test.cpp"
+    "${EXECUTORCH_ROOT}/kernels/portable/test/op_allclose_test.cpp"
     "${EXECUTORCH_ROOT}/kernels/portable/test/op_div_test.cpp"
     "${EXECUTORCH_ROOT}/kernels/portable/test/op_gelu_test.cpp"
     "${EXECUTORCH_ROOT}/kernels/portable/test/op_mul_test.cpp"

@@ -6,7 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include <executorch/kernels/portable/NativeFunctions.h> // Declares the operator
 #include <executorch/kernels/test/TestUtil.h>
 #include <executorch/runtime/core/exec_aten/exec_aten.h>
 #include <executorch/runtime/core/exec_aten/testing_util/tensor_factory.h>
@@ -15,6 +14,18 @@
 
 #include <gtest/gtest.h>
 #include <cmath>
+
+// Allclose is a custom operator and is absent from the OSS NativeFunctions.h.
+namespace torch::executor::native {
+executorch::aten::Tensor& allclose_out(
+    const executorch::aten::Tensor& self,
+    const executorch::aten::Tensor& other,
+    double rtol,
+    double atol,
+    bool equal_nan,
+    bool dummy_param,
+    executorch::aten::Tensor& out);
+} // namespace torch::executor::native
 
 using namespace ::testing;
 using executorch::aten::ScalarType;
